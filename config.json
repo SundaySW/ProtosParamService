@@ -1,0 +1,10 @@
+{
+    "ConfObject": {
+        "AutoReConnect": true,
+        "ServerIP": "127.0.0.5",
+        "ServerPort": "3699",
+        "SelfAddr": 34,
+        "WriteToFile": false,
+        "RequestOnSet": false
+    }
+}
