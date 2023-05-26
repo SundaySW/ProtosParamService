@@ -147,7 +147,7 @@ int Protos2xPacketToFixedPacket(const std::vector<char>& src, char* dst)
 //void AssemblePacket2x(PacketDesc& packet, char byte)
 //{
 //	// * - protos message
-//	// ! - control(text) message
+//	// ! - controlItem(text) message
 //	if (byte == '*' || byte == '!')
 //	{
 //		if (packet.Data.size())

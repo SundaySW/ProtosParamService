@@ -25,7 +25,7 @@ ParamItem::ParamItem(const ProtosMessage &message, ParamItemType type){
     Dest_ID = message.GetDestAddr();
     Sender_ID = message.GetSenderAddr();
     altName = "";
-    Value = message.GetParamFieldValue();
+    setValue(message.GetParamFieldValue());
     expectedValue = message.GetParamFieldValue();
     Note = "";
 //    writeToDB = (type == CONTROL);
@@ -42,7 +42,7 @@ ParamItem::ParamItem(QJsonObject& obj){
     Dest_ID = obj["DestID"].toInt();
     Sender_ID = obj["SenderID"].toInt();
     altName = obj["altName"].toString();
-    Value = obj["Value"].toString();
+    setValue(obj["Value"].toString());
     expectedValue = obj["ExpectedValue"].toString();
     Note = obj["Note"].toString();
     writeToDB = obj["writeToDB"].toBool();
@@ -50,8 +50,26 @@ ParamItem::ParamItem(QJsonObject& obj){
     state = ParamItemStates(obj["state"].toInt());
     lastValueTime = QDateTime::fromString(obj["dateTime"].toString());
     lastValueType = static_cast<ProtosMessage::MsgTypes>(obj["LastValueType"].toInt());
-    updateRate = obj["UpdateRate"].toInt();
+    viewUpdateRate = obj["UpdateRate"].toInt();
 }
+
+ParamItem::ParamItem(ParamItem &&paramItem) {
+    ID = paramItem.ID;
+    Host_ID = paramItem.Host_ID;
+    Dest_ID = paramItem.Dest_ID;
+    Sender_ID = paramItem.Sender_ID;
+    altName = paramItem.altName;
+    setValue(paramItem.Value);
+    expectedValue = paramItem.expectedValue;
+    Note = paramItem.Note;
+    writeToDB = paramItem.writeToDB;
+    paramType = paramItem.paramType;
+    state = paramItem.state;
+    lastValueTime = paramItem.lastValueTime;
+    lastValueType = paramItem.lastValueType;
+    viewUpdateRate = paramItem.viewUpdateRate;
+}
+
 
 QJsonObject ParamItem::getJsonObject() {
     QJsonObject retVal;
@@ -68,7 +86,7 @@ QJsonObject ParamItem::getJsonObject() {
     retVal["state"] = static_cast<int>(state);
     retVal["dateTime"] = lastValueTime.toString();
     retVal["LastValueType"] = lastValueType;
-    retVal["UpdateRate"] = updateRate;
+    retVal["UpdateRate"] = viewUpdateRate;
     return retVal;
 }
 
@@ -95,18 +113,18 @@ void ParamItem::update(const ProtosMessage &message){
 }
 
 QString ParamItem::getColumnTypes() {
-    return QString(
+    return {
     "n SERIAL PRIMARY KEY,"
     " DateTime timestamp with time zone,"
     " Value real,"
     " MsgType smallint,"
     " SenderDest smallint,"
     " Note VARCHAR (70)"
-    );
+    };
 }
 
 QString ParamItem::getTableInsertVars() {
-    return QString("DateTime, Value, MsgType, SenderDest, Note");
+    return {"DateTime, Value, MsgType, SenderDest, Note"};
 }
 
 QString ParamItem::getTableInsertValues(const QString &eventStr) const {
@@ -166,9 +184,10 @@ bool ParamItem::isWriteToDb() const {
     return writeToDB;
 }
 
-void ParamItem::setValue(const QVariant &value) {
+void ParamItem::setValue(const QVariant &value){
     Value = value;
     this->setLastValueTime(QDateTime::currentDateTime());
+    emit newParamValue(value);
 }
 
 void ParamItem::setExpectedValue(const QVariant &value) {
@@ -189,18 +208,18 @@ void ParamItem::setWriteToDb(bool writeToDb) {
 
 QString ParamItem::getLastValueTime(){
     if(lastValueTime.isNull())
-        return QString("-- --");
+        return {"-- --"};
     return lastValueTime.toString(QString("hh:mm:ss_zzz"));
 }
 
 QString ParamItem::getLastValueDay() {
     if(lastValueTime.isNull())
-        return QString("-- --");
+        return {"-- --"};
     return lastValueTime.toString(QString("dd.MM"));
 }
 
-void ParamItem::setLastValueTime(const QDateTime& valueTime) {
-    lastValueTime = valueTime;
+void ParamItem::setLastValueTime(QDateTime valueTime) {
+    lastValueTime = std::move(valueTime);
 }
 
 void ParamItem::setAltName(const QString& name) {
@@ -211,8 +230,8 @@ QString ParamItem::getAltName() const {
     return altName;
 }
 
-int ParamItem::getUpdateRate() const {
-    return updateRate;
+int ParamItem::getViewUpdateRate() const {
+    return viewUpdateRate;
 }
 
 void ParamItem::timeoutUpdate(){
@@ -254,6 +273,65 @@ uchar ParamItem::getDestId() const {
     return Dest_ID;
 }
 
-void ParamItem::setUpdateRate(short _updateRate) {
-    updateRate = _updateRate;
+void ParamItem::setViewUpdateRate(short _updateRate) {
+    viewUpdateRate = _updateRate;
+}
+
+short ParamItem::getRateValue(uchar paramField) const{
+    switch (paramField) {
+        case ProtosMessage::UPDATE_RATE:
+            return paramUpdateRate;
+        case ProtosMessage::SEND_RATE:
+            return paramSendRate;
+        case ProtosMessage::CTRL_RATE:
+            return paramCtrlRate;
+        default:
+            return 0;
+    }
+}
+
+double ParamItem::getCalibValue(uchar paramField) const {
+    switch (paramField) {
+        case ProtosMessage::MULT:
+            return paramCalibMult;
+        case ProtosMessage::OFFSET:
+            return paramCalibOffset;
+        default:
+            return 0;
+    }
+}
+
+void ParamItem::setRateValue(uchar paramField, short value){
+    switch (paramField) {
+        case ProtosMessage::UPDATE_RATE:
+            paramUpdateRate = value;
+            break;
+        case ProtosMessage::SEND_RATE:
+            paramSendRate = value;
+        case ProtosMessage::CTRL_RATE:
+            paramCtrlRate = value;
+        default:
+            break;
+    }
+    emit paramRatesChanged(paramField, value);
+}
+
+void ParamItem::setCalibValue(uchar paramField, double value){
+    switch (paramField) {
+        case ProtosMessage::MULT:
+            paramCalibMult = value;
+        case ProtosMessage::OFFSET:
+            paramCalibOffset = value;
+        default:
+            break;
+    }
+    emit paramCalibDataChanged(paramField, value);
+}
+
+int ParamItem::getUpdateRate() const {
+    return paramUpdateRate;
+}
+
+const QDateTime &ParamItem::getLastValueDateTime() const {
+    return lastValueTime;
 }

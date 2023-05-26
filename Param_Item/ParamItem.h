@@ -27,12 +27,14 @@ enum ParamItemStates {
     ERROR = 4,
 };
 
-class ParamItem{
+class ParamItem: public QObject{
+    Q_OBJECT
 public:
     ParamItem() = default;
     explicit ParamItem(uchar, uchar, ParamItemType);
     explicit ParamItem(QJsonObject&);
     explicit ParamItem(const ProtosMessage &message, ParamItemType type);
+    explicit ParamItem(ParamItem&& paramItem);
 
     [[nodiscard]] uchar getParamId() const;
     [[nodiscard]] uchar getHostID() const;
@@ -42,9 +44,12 @@ public:
     [[nodiscard]] ParamItemType getParamType() const;
     [[nodiscard]] bool isWriteToDb() const;
     [[nodiscard]] QString getTableName() const;
-    [[nodiscard]] int getUpdateRate() const;
+    [[nodiscard]] int getViewUpdateRate() const;
+    int getUpdateRate() const;
     QString getLastValueTime();
     QString getLastValueDay();
+    const QDateTime &getLastValueDateTime() const;
+
     QJsonObject getJsonObject();
     static QString getColumnTypes();
     static QString getTableInsertVars();
@@ -55,8 +60,10 @@ public:
     const QVariant &getExpectedValue() const;
     ProtosMessage::MsgTypes getLastValueType() const;
     uchar getDestId() const;
+    short getRateValue(uchar rateType) const;
+    double getCalibValue(uchar rateType) const;
 
-    void setUpdateRate(short updateRate);
+    void setViewUpdateRate(short updateRate);
     void setValue(const QVariant &value);
     void setLastValueType(ProtosMessage::MsgTypes lastValueType);
     void setExpectedValue(const QVariant &value);
@@ -64,13 +71,20 @@ public:
     void setState(ParamItemStates inState);
     void setWriteToDb(bool writeToDb);
     void setAltName(const QString&);
-    void setLastValueTime(const QDateTime& lastValueTime);
+    void setLastValueTime(QDateTime lastValueTime);
     bool setParamType(ParamItemType paramType);
     void setSenderId(uchar senderId);
     void setDestId(uchar destID);
+    void setRateValue(uchar rateType, short Value);
+    void setCalibValue(uchar rateType, double Value);
+
     void timeoutUpdate();
     void update(const ProtosMessage &message);
-    QString getLogToFileHead();
+    static QString getLogToFileHead();
+signals:
+    void newParamValue(const QVariant &value);
+    void paramRatesChanged(uchar, short);
+    void paramCalibDataChanged(uchar, double);
 private:
     QDateTime lastValueTime;
     uchar ID;
@@ -85,7 +99,9 @@ private:
     ParamItemStates state;
     ParamItemType paramType;
     bool writeToDB;
-    short updateRate = 5000;
+    int viewUpdateRate = 5000;
+    short paramUpdateRate, paramSendRate, paramCtrlRate;
+    double paramCalibOffset, paramCalibMult;
 };
 
 #endif //POTOSSERVER_PARAMSERVICE_PARAMITEM_H
