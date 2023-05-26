@@ -30,7 +30,7 @@ enum ParamItemStates {
 class ParamItem: public QObject{
     Q_OBJECT
 public:
-    ParamItem() = default;
+    ParamItem() = delete;
     explicit ParamItem(uchar, uchar, ParamItemType);
     explicit ParamItem(QJsonObject&);
     explicit ParamItem(const ProtosMessage &message, ParamItemType type);
