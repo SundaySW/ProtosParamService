@@ -63,6 +63,7 @@ public:
     short getRateValue(uchar rateType) const;
     double getCalibValue(uchar rateType) const;
 
+    void setUpdateRate(short value);
     void setViewUpdateRate(short updateRate);
     void setValue(const QVariant &value);
     void setLastValueType(ProtosMessage::MsgTypes lastValueType);

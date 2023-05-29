@@ -102,6 +102,10 @@ QString ParamService::makeMapKey(uchar host, uchar ID){
     return QString("%1_%2").arg(ID,0,16).arg(host,0,16);
 }
 
+QString ParamService::makeMapKey(const QJsonObject& jsonObject){
+    return QString("%1_%2").arg(jsonObject["ID"].toInt(),0,16).arg(jsonObject["HostID"].toInt(),0,16);
+}
+
 QString ParamService::makeMapKey(const ParamItem& paramItem){
     return QString("%1_%2").arg(paramItem.getParamId(), 0, 16).arg(paramItem.getHostID(), 0, 16);
 }
@@ -163,12 +167,10 @@ void ParamService::loadParams(QJsonObject& qJsonObject) {
     for (const auto& param : paramArr)
     {
         QJsonObject loadParamJson = param.toObject();
-        if (param != QJsonObject())
+        if(!loadParamJson.isEmpty())
         {
-            auto item = QSharedPointer<ParamItem>(new ParamItem(loadParamJson));
-            auto mapKey = makeMapKey(item.get());
-            item->setState(OFFLINE);
-            paramsMap.insert(mapKey, item);
+            auto mapKey = makeMapKey(loadParamJson);
+            paramsMap.insert(mapKey, QSharedPointer<ParamItem>(new ParamItem(loadParamJson)));
             makeParamTimer(mapKey);
         }
     }

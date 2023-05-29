@@ -37,6 +37,8 @@ public:
     static QString makeMapKey(uchar host, uchar ID);
     static QString makeMapKey(const ParamItem &paramItem);
     static QString makeMapKey(const ParamItem *paramItem);
+    static QString makeMapKey(const QJsonObject &jsonObject);
+
     static QString tableNameToMapKey(QString tableName);
     void setSelfAddr(uchar selfAddr);
     void setWriteToFile(bool writeToFile);

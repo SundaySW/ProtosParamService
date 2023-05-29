@@ -47,10 +47,12 @@ ParamItem::ParamItem(QJsonObject& obj){
     Note = obj["Note"].toString();
     writeToDB = obj["writeToDB"].toBool();
     paramType = static_cast<ParamItemType>(obj["Type"].toInt());
-    state = ParamItemStates(obj["state"].toInt());
+//    state = ParamItemStates(obj["state"].toInt());
+    state = OFFLINE;
     lastValueTime = QDateTime::fromString(obj["dateTime"].toString());
     lastValueType = static_cast<ProtosMessage::MsgTypes>(obj["LastValueType"].toInt());
-    viewUpdateRate = obj["UpdateRate"].toInt();
+    paramUpdateRate = (short)obj["UpdateRate"].toInt();
+    viewUpdateRate = obj["ViewUpdateRate"].toInt();
 }
 
 ParamItem::ParamItem(ParamItem &&paramItem) {
@@ -70,7 +72,6 @@ ParamItem::ParamItem(ParamItem &&paramItem) {
     viewUpdateRate = paramItem.viewUpdateRate;
 }
 
-
 QJsonObject ParamItem::getJsonObject() {
     QJsonObject retVal;
     retVal["ID"] = ID;
@@ -86,7 +87,8 @@ QJsonObject ParamItem::getJsonObject() {
     retVal["state"] = static_cast<int>(state);
     retVal["dateTime"] = lastValueTime.toString();
     retVal["LastValueType"] = lastValueType;
-    retVal["UpdateRate"] = viewUpdateRate;
+    retVal["UpdateRate"] = paramUpdateRate;
+    retVal["ViewUpdateRate"] = viewUpdateRate;
     return retVal;
 }
 
@@ -330,6 +332,10 @@ void ParamItem::setCalibValue(uchar paramField, double value){
 
 int ParamItem::getUpdateRate() const {
     return paramUpdateRate;
+}
+
+void ParamItem::setUpdateRate(short value) {
+    paramUpdateRate = value;
 }
 
 const QDateTime &ParamItem::getLastValueDateTime() const {
