@@ -264,7 +264,7 @@ void ParamService::updateParamUpdateRates(const QString& mapKey, const QVariant&
 
 void ParamService::updateParamCalibData(const QString& mapKey, const QVariant& value, uchar paramField){
     bool ok;
-    auto newValue = (short)value.toDouble(&ok);
+    auto newValue = value.toDouble(&ok);
     if(ok)
         paramsMap[mapKey]->setCalibValue(paramField, newValue);
 }
