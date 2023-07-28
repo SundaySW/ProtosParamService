@@ -149,9 +149,9 @@ QString ProtosMessage::GetErrorMsg() const
 	switch (MsgType)
 	{
 	case MERR:		
-		return QObject::tr("Got MERR 0x%1 on 0x%2 cmd from ID 0x%3").arg(err, cmd, id);		
+		return QObject::tr("Got MERR 0x%1 on 0x%2 cmd from ID_ 0x%3").arg(err, cmd, id);
 	case SERR:
-		errorMsg = QObject::tr("Got SERR 0x%1 on 0x%2 cmd from ID 0x%3").arg(err, cmd, id);
+		errorMsg = QObject::tr("Got SERR 0x%1 on 0x%2 cmd from ID_ 0x%3").arg(err, cmd, id);
 
 		switch (CmdId)
 		{
@@ -161,7 +161,7 @@ QString ProtosMessage::GetErrorMsg() const
 			switch (Data[1])
 			{
 			case 0x01:
-				errorMsg = QObject::tr("1-Wire parameter with ID 0x%1 not found").arg(id);
+				errorMsg = QObject::tr("1-Wire parameter with ID_ 0x%1 not found").arg(id);
 				break;
 			}
 		case 0xA5: //OWParams request cmd has no error codes
@@ -177,7 +177,7 @@ QString ProtosMessage::GetErrorMsg() const
 	case PERR:		
 //		id.arg(Data[0], ToHexStr).toUpper();
 //		err.arg(Data[1], ToHexStr).toUpper();
-		return QObject::tr("Got PERR 0x%1 from ID 0x%2 ").arg(err, id);		
+		return QObject::tr("Got PERR 0x%1 from ID_ 0x%2 ").arg(err, id);
 	default:
 		return "";
 	}
@@ -201,7 +201,7 @@ QString ProtosMessage::GetMsgTypeName(uchar msgType)
 	case SERR: return "S.ERR";
 	case PREQ: return "P.REQ";
 	case PANS: return "P.ANS";
-	case PSET: return "P.CONTROL";
+	case PSET: return "P.kControl";
 	case PERR: return "P.ERR";
 	default:   return "UNDEFINED";
 	}
@@ -239,7 +239,7 @@ QString ProtosMessage::GetParamFieldName(uchar field)
 {
 	switch (field)
 	{
-	case ID:	return "ID";
+	case ID:	return "ID_";
 	case TYPE:	return "TYPE";
 	case VALUE:	return "VALUE";
 	case SEND_RATE:	return "SEND_RATE";

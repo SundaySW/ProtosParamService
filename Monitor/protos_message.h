@@ -23,12 +23,12 @@
 //		"S.ERR", 
 //		"P.REQ", 
 //		"P.ANS", 
-//		"P.CONTROL",
+//		"P.kControl",
 //		"P.ERR" 
 //	};
 //	const QString ParamFieldNames[13] = 
 //	{ 
-//		"ID", 
+//		"ID_",
 //		"TYPE", 
 //		"VALUE", 
 //		"SEND_RATE",

@@ -12,19 +12,19 @@
 #include "QDateTime"
 #include "QJsonObject"
 
-enum ParamItemType {
-    BASE = 0,
-    UPDATE = 1,
-    CONTROL = 2,
-    CALIB = 3
+enum class ParamItemType {
+    kBase = 0,
+    kUpdate = 1,
+    kControl = 2,
+    kCalib = 3
 };
 
-enum ParamItemStates {
-    ONLINE = 0,
-    OFFLINE = 1,
-    PENDING = 2,
-    DB_WRITE_FAIL = 3,
-    ERROR = 4,
+enum class ParamItemStates {
+    kOnline = 0,
+    kOffline = 1,
+    kPending = 2,
+    kDB_write_fail = 3,
+    kError = 4,
 };
 
 class ParamItem: public QObject{
@@ -87,22 +87,22 @@ signals:
     void paramRatesChanged(uchar, short);
     void paramCalibDataChanged(uchar, double);
 private:
-    QDateTime lastValueTime;
-    uchar ID;
-    uchar Host_ID;
-    uchar Sender_ID = 0;
-    uchar Dest_ID = 0;
-    QString altName;
-    QVariant Value;
-    QVariant expectedValue;
-    ProtosMessage::MsgTypes lastValueType;
-    QString Note;
-    ParamItemStates state;
-    ParamItemType paramType;
-    bool writeToDB;
-    int viewUpdateRate = 5000;
-    short paramUpdateRate, paramSendRate, paramCtrlRate;
-    double paramCalibOffset, paramCalibMult;
+    QDateTime last_value_time_;
+    uchar ID_;
+    uchar host_id_;
+    uchar sender_id_{0};
+    uchar dest_id_{0};
+    QString alt_name_;
+    QVariant value_;
+    QVariant expected_value_;
+    ProtosMessage::MsgTypes last_value_type_;
+    QString note_;
+    ParamItemStates state_;
+    ParamItemType param_type_;
+    bool write_to_DB_;
+    int view_update_rate_{5000};
+    short param_update_rate_, param_send_rate_, param_ctrl_rate_;
+    double param_calib_offset_, param_calib_mult_;
 };
 
 #endif //POTOSSERVER_PARAMSERVICE_PARAMITEM_H

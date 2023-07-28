@@ -85,7 +85,7 @@ private:
 	void AssemblePacket2x(char byte)
 	{
 		// * - protos message
-		// ! - controlItem(text) message
+		// ! - controlItem_(text) message
 		if (byte == '*' || byte == '!')
 		{
 			if (Packet.size())

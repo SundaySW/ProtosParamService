@@ -27,13 +27,13 @@ bool PSQL_Driver::setConnection() {
     if(result){
         connected = true;
         inError = false;
-        throwEventToLog(QString("opened database name: %1").arg(dbName));
+        throwEventToLog(QString("opened database item_name_: %1").arg(dbName));
         loadTableNames();
     }
     else {
         connected = false;
         inError = true;
-        throwErrorToLog(QString("cant open database name: %1").arg(dbName));
+        throwErrorToLog(QString("cant open database item_name_: %1").arg(dbName));
     }
     return result;
 }
@@ -58,7 +58,7 @@ bool PSQL_Driver::hasTable(const QString& tableName){
 /*    QString queryStr = QString(
             "SELECT EXISTS (SELECT FROM information_schema.tables "
             "WHERE table_schema LIKE 'public' "
-            "AND table_type LIKE 'BASE TABLE' "
+            "AND table_type LIKE 'kBase TABLE' "
             "AND table_name = '%1');").arg(tableName);
     QSqlQuery query;
     if(!execMyQuery(query, queryStr)) {
@@ -167,7 +167,7 @@ void PSQL_Driver::configUpdate() {
 void PSQL_Driver::closeConnection() {
     connected = false;
     db.close();
-    throwEventToLog(QString("closed database name: %1").arg(dbName));
+    throwEventToLog(QString("closed database item_name_: %1").arg(dbName));
 }
 
 void PSQL_Driver::throwEventToLog(const QString& str){

@@ -13,69 +13,70 @@
 #endif
 
 ParamService::ParamService():
-        logFile(new QFile()),
-        writeToFile(false)
+        log_file_(new QFile()),
+        write_to_file_(false)
 {
 }
 
 void ParamService::setSocketAdapter(QSharedPointer<SocketAdapter> SA){
-    socketAdapter = std::move(SA);
-    socketAdapter->AddTxMsgHandler([this](const ProtosMessage& txMsg) { txMsgHandler(txMsg);});
-    socketAdapter->AddRxMsgHandler([this](const ProtosMessage& txMsg) { rxMsgHandler(txMsg);});
+    socket_adapter_ = std::move(SA);
+    socket_adapter_->AddTxMsgHandler([this](const ProtosMessage& txMsg) { txMsgHandler(txMsg);});
+    socket_adapter_->AddRxMsgHandler([this](const ProtosMessage& txMsg) { rxMsgHandler(txMsg);});
 }
 
 bool ParamService::addParam(uchar incomeID, uchar incomeHostAddr, ParamItemType incomeType) {
     return addParam(std::move(ParamItem(incomeID, incomeHostAddr, incomeType)), false);
 }
 
-bool ParamService::addParam(ParamItem &&paramItem, bool addToDB){
-    auto mapKey = makeMapKey(paramItem);
-    if(paramsMap.contains(mapKey)) return false;
-    paramsMap.insert(mapKey, QSharedPointer<ParamItem>(new ParamItem(std::move(paramItem))));
-    auto appendParam = paramsMap[mapKey];
+bool ParamService::addParam(ParamItem &&param_item, bool add_to_DB){
+    auto map_key = makeMapKey(param_item);
+    if(param_map_.contains(map_key)) return false;
+    param_map_.insert(map_key, QSharedPointer<ParamItem>(new ParamItem(std::move(param_item))));
+    auto appendParam = param_map_[map_key];
     auto type = appendParam->getParamType();
-    makeParamTimer(mapKey);
+    makeParamTimer(map_key);
     emit addedParamFromLine(type);
-    emit addedParamFromLine(paramsMap[mapKey]);
+    emit addedParamFromLine(param_map_[map_key]);
     return true;
 }
 
 bool ParamService::updateParam(const ProtosMessage &message, const QString &mapKey) {
-    if(paramsMap.contains(mapKey)){
-        auto& paramToUpdate = paramsMap[mapKey];
+    if(param_map_.contains(mapKey)){
+        auto& paramToUpdate = param_map_[mapKey];
         paramToUpdate->update(message);
-        emit changedParamState(paramToUpdate->getParamType());
+        emit onChangedParamState(paramToUpdate->getParamType());
         emit changedParamValue(paramToUpdate);
-        manageTimersWhileUpdate(mapKey, message.MsgType, paramToUpdate->getViewUpdateRate(), paramToUpdate->getParamType());
+        ManageTimersWhileUpdate(mapKey, message.MsgType, paramToUpdate->getViewUpdateRate(),
+                                paramToUpdate->getParamType());
         return true;
     }
     return false;
 }
 
-void ParamService::manageTimersWhileUpdate(const QString &mapKey, uchar msgType, int updateRate, int paramType) {
-    if(timerMap.contains(mapKey)){
-        switch (paramType){
-            case CONTROL:
-                switch(msgType){
+void ParamService::ManageTimersWhileUpdate(const QString &map_key, uchar msg_type, int update_rate, ParamItemType param_type) {
+    if(timer_map_.contains(map_key)){
+        switch (param_type){
+            case ParamItemType::kControl:
+                switch(msg_type){
                     case ProtosMessage::PSET:
-                        timerMap[mapKey]->start(updateRate);
-                        processSetParamReq(mapKey);
+                        timer_map_[map_key]->start(update_rate);
+                        processSetParamReq(map_key);
                         break;
                     case ProtosMessage::PANS:
-                        timerMap[mapKey]->stop();
+                        timer_map_[map_key]->stop();
                         break;
                     default:
                         break;
                 }
                 break;
-            case UPDATE:
-                switch(msgType){
+            case ParamItemType::kUpdate:
+                switch(msg_type){
                     case ProtosMessage::PSET:
-                        timerMap[mapKey]->start(updateRate);
-                        processSetParamReq(mapKey);
+                        timer_map_[map_key]->start(update_rate);
+                        processSetParamReq(map_key);
                         break;
                     case ProtosMessage::PANS:
-                        timerMap[mapKey]->start(updateRate);
+                        timer_map_[map_key]->start(update_rate);
                         break;
                     default:
                         break;
@@ -88,10 +89,10 @@ void ParamService::manageTimersWhileUpdate(const QString &mapKey, uchar msgType,
 }
 
 void ParamService::makeParamTimer(const QString &mapKey){
-    if(!timerMap.contains(mapKey)) {
+    if(!timer_map_.contains(mapKey)) {
         auto* newTim = new QTimer(this);
-        timerMap.insert(mapKey, newTim);
-        timerMap[mapKey]->start(paramsMap[mapKey]->getViewUpdateRate());
+        timer_map_.insert(mapKey, newTim);
+        timer_map_[mapKey]->start(param_map_[mapKey]->getViewUpdateRate());
         connect(newTim, &QTimer::timeout, [this, newTim]() {
             timerFinished(newTim->timerId());
         });
@@ -103,7 +104,7 @@ QString ParamService::makeMapKey(uchar host, uchar ID){
 }
 
 QString ParamService::makeMapKey(const QJsonObject& jsonObject){
-    return QString("%1_%2").arg(jsonObject["ID"].toInt(),0,16).arg(jsonObject["HostID"].toInt(),0,16);
+    return QString("%1_%2").arg(jsonObject["ID_"].toInt(),0,16).arg(jsonObject["HostID"].toInt(),0,16);
 }
 
 QString ParamService::makeMapKey(const ParamItem& paramItem){
@@ -119,34 +120,34 @@ QString ParamService::tableNameToMapKey(QString tableName){
 }
 
 bool ParamService::removeParam(const QString& mapKey){
-    if(!paramsMap.contains(mapKey)) return false;
-    auto removedType = paramsMap[mapKey]->getParamType();
+    if(!param_map_.contains(mapKey)) return false;
+    auto removedType = param_map_[mapKey]->getParamType();
     removeFromAllMaps(mapKey);
     return true;
 }
 
 void ParamService::removeFromAllMaps(const QString& mapKey){
-    if(paramsMap.contains(mapKey))
-        paramsMap.remove(mapKey);
-    if(timerMap.contains(mapKey)) timerMap.remove(mapKey);
+    if(param_map_.contains(mapKey))
+        param_map_.remove(mapKey);
+    if(timer_map_.contains(mapKey)) timer_map_.remove(mapKey);
 }
 
 void ParamService::writeParamToFile(ParamItem &param, const QString &event) {
-    if(!logFile->isOpen()){
+    if(!log_file_->isOpen()){
         auto fileName = QDateTime::currentDateTime().toString(QString("yyyy.MM.dd_hh.mm.ss")).append(".csv");
         auto pathToLogs = QString(CURRENT_BUILD_TYPE_) == "Debug" ? "/../logs" : "/logs";
-        logFile = new QFile(QCoreApplication::applicationDirPath() + QString("%1/%2").arg(pathToLogs, fileName));
-        logFile->open(QIODevice::ReadWrite);
-        textStream.setDevice(logFile);
-        textStream << param.getLogToFileHead();
+        log_file_ = new QFile(QCoreApplication::applicationDirPath() + QString("%1/%2").arg(pathToLogs, fileName));
+        log_file_->open(QIODevice::ReadWrite);
+        text_stream_.setDevice(log_file_);
+        text_stream_ << param.getLogToFileHead();
     }
-    textStream << param.getLogToFileStr(event);
+    text_stream_ << param.getLogToFileStr(event);
 }
 
 void ParamService::configureTimer(int timerValue){
-    writeTimer = new QTimer();
-    connect(writeTimer, SIGNAL(timeout()), this, SLOT(writeTimerUpdate()));
-    writeTimer->start(mSecWriteTimer);
+    write_timer_ = new QTimer();
+    connect(write_timer_, SIGNAL(timeout()), this, SLOT(writeTimerUpdate()));
+    write_timer_->start(kMSec_write_time_);
 }
 
 void ParamService::writeTimerUpdate() {
@@ -154,31 +155,31 @@ void ParamService::writeTimerUpdate() {
 
 void ParamService::saveParams(QJsonObject& qJsonObject){
     QJsonArray paramArr;
-    for(auto& p: paramsMap)
+    for(auto& p: param_map_)
         paramArr.append(p->getJsonObject());
     qJsonObject["Params"] = paramArr;
-    logFile->close();
+    log_file_->close();
 }
 
 void ParamService::loadParams(QJsonObject& qJsonObject) {
     QJsonArray paramArr = qJsonObject["Params"].toArray();
-    paramsMap.clear();
-    timerMap.clear();
+    param_map_.clear();
+    timer_map_.clear();
     for (const auto& param : paramArr)
     {
         QJsonObject loadParamJson = param.toObject();
         if(!loadParamJson.isEmpty())
         {
             auto mapKey = makeMapKey(loadParamJson);
-            paramsMap.insert(mapKey, QSharedPointer<ParamItem>(new ParamItem(loadParamJson)));
+            param_map_.insert(mapKey, QSharedPointer<ParamItem>(new ParamItem(loadParamJson)));
             makeParamTimer(mapKey);
         }
     }
 }
 
 void ParamService::setParamEvent(const QString &mapKey){
-    auto& paramToWrite = paramsMap[mapKey];
-    auto senderId = paramToWrite->getSenderId() == selfAddr ? "localHost" : QString("%1").arg(paramToWrite->getSenderId(),0,16).toUpper().prepend("0x");
+    auto& paramToWrite = param_map_[mapKey];
+    auto senderId = paramToWrite->getSenderId() == self_addr_ ? "localHost" : QString("%1").arg(paramToWrite->getSenderId(), 0, 16).toUpper().prepend("0x");
     auto eventStr = QString("SET_PARAM:%1 VALUE:%2 FROM:%3")
             .arg(paramToWrite->getTableName(), paramToWrite->getValue().toString(), senderId);
 }
@@ -189,7 +190,7 @@ void ParamService::rxMsgHandler(const ProtosMessage &message){
             processPANSMsg(message);
             break;
         case ProtosMessage::MsgTypes::PSET:
-            processPSETMsg(message);
+            processSETMsg(message);
             break;
         default:
             break;
@@ -201,7 +202,7 @@ void ParamService::processPANSMsg(const ProtosMessage& message){
     switch (message.ParamField) {
         case ProtosMessage::VALUE:
             if(!updateParam(message, mapKey))
-                addParam(std::move(ParamItem(message, UPDATE)));
+                addParam(std::move(ParamItem(message, ParamItemType::kUpdate)));
             break;
         case ProtosMessage::UPDATE_RATE:
         case ProtosMessage::CTRL_RATE:
@@ -219,12 +220,12 @@ void ParamService::processPANSMsg(const ProtosMessage& message){
     }
 }
 
-void ParamService::processPSETMsg(const ProtosMessage& message){
+void ParamService::processSETMsg(const ProtosMessage& message){
     QString mapKey = makeMapKey(message.GetDestAddr(), message.GetParamId());
     switch (message.ParamField) {
         case ProtosMessage::VALUE:
             if(!updateParam(message, mapKey))
-                addParam(std::move(ParamItem(message, CONTROL)));
+                addParam(std::move(ParamItem(message, ParamItemType::kControl)));
             break;
         case ProtosMessage::UPDATE_RATE:
         case ProtosMessage::CTRL_RATE:
@@ -248,10 +249,10 @@ void ParamService::updateParamViewUpdateRate(const QString& mapKey, const QVaria
         if(newUpdateRateValue > 2900) newUpdateRateValue *= 1.5;
         else if(newUpdateRateValue >= 1200) newUpdateRateValue *= 2.5;
         else newUpdateRateValue *= 4;
-        if(paramsMap.contains(mapKey))
-            paramsMap[mapKey]->setViewUpdateRate(newUpdateRateValue);
-        if(timerMap.contains(mapKey))
-            timerMap.value(mapKey)->setInterval(newUpdateRateValue);
+        if(param_map_.contains(mapKey))
+            param_map_[mapKey]->setViewUpdateRate(newUpdateRateValue);
+        if(timer_map_.contains(mapKey))
+            timer_map_.value(mapKey)->setInterval(newUpdateRateValue);
     }
 }
 
@@ -259,14 +260,14 @@ void ParamService::updateParamUpdateRates(const QString& mapKey, const QVariant&
     bool ok;
     auto newValue = (short)value.toInt(&ok);
     if(ok)
-        paramsMap[mapKey]->setRateValue(paramField, newValue);
+        param_map_[mapKey]->setRateValue(paramField, newValue);
 }
 
 void ParamService::updateParamCalibData(const QString& mapKey, const QVariant& value, uchar paramField){
     bool ok;
     auto newValue = value.toDouble(&ok);
     if(ok)
-        paramsMap[mapKey]->setCalibValue(paramField, newValue);
+        param_map_[mapKey]->setCalibValue(paramField, newValue);
 }
 
 void ParamService::txMsgHandler(const ProtosMessage &message) {
@@ -274,13 +275,13 @@ void ParamService::txMsgHandler(const ProtosMessage &message) {
 }
 
 void ParamService::setParamValueChanged(const QString& mapKey, const QVariant& value){
-    if(!paramsMap.contains(mapKey)) return;
-    auto param = paramsMap[mapKey];
+    if(!param_map_.contains(mapKey)) return;
+    auto param = param_map_[mapKey];
     param->setExpectedValue(value);
-    param->setSenderId(selfAddr);
-    param->setState(PENDING);
+    param->setSenderId(self_addr_);
+    param->setState(ParamItemStates::kPending);
     param->setLastValueType(ProtosMessage::MsgTypes::PSET);
-    emit changedParamState(UPDATE);
+    emit onChangedParamState(ParamItemType::kUpdate);
     emit changedParamValue(param);
     param->setValue(value);
     sendProtosMsgSetParam(mapKey);
@@ -289,14 +290,14 @@ void ParamService::setParamValueChanged(const QString& mapKey, const QVariant& v
 
 void ParamService::setParamValueChanged(uchar Id, uchar Host, const QVariant& value){
     auto mapKey = makeMapKey(Host, Id);
-    if(!paramsMap.contains(mapKey))
-        addParam(Id, Host, CONTROL);
-    auto param = paramsMap[mapKey];
+    if(!param_map_.contains(mapKey))
+        addParam(Id, Host, ParamItemType::kControl);
+    auto param = param_map_[mapKey];
     param->setExpectedValue(value);
-    param->setSenderId(selfAddr);
-    param->setState(PENDING);
+    param->setSenderId(self_addr_);
+    param->setState(ParamItemStates::kPending);
     param->setLastValueType(ProtosMessage::MsgTypes::PSET);
-    emit changedParamState(UPDATE);
+    emit onChangedParamState(ParamItemType::kUpdate);
     emit changedParamValue(param);
     param->setValue(value);
     sendProtosMsgSetParam(mapKey);
@@ -304,26 +305,26 @@ void ParamService::setParamValueChanged(uchar Id, uchar Host, const QVariant& va
 }
 
 void ParamService::processSetParamReq(const QString& mapKey){
-    if(reqOnSet){
-        auto param = paramsMap[mapKey];
-        ProtosMessage msg(param->getHostID(), selfAddr, param->getParamId(), ProtosMessage::MsgTypes::PREQ, ProtosMessage::ParamFields::VALUE);
-        socketAdapter->SendMsg(msg);
+    if(request_on_set_){
+        auto param = param_map_[mapKey];
+        ProtosMessage msg(param->getHostID(), self_addr_, param->getParamId(), ProtosMessage::MsgTypes::PREQ, ProtosMessage::ParamFields::VALUE);
+        socket_adapter_->SendMsg(msg);
     }
 }
 
 void ParamService::sendProtosMsgSetParam(const QString &mapKey){
-    auto param = paramsMap[mapKey];
-    ProtosMessage msg(param->getHostID(), selfAddr, param->getParamId(), short(param->getValue().toInt()), ProtosMessage::MsgTypes::PSET);
-    socketAdapter->SendMsg(msg);
+    auto param = param_map_[mapKey];
+    ProtosMessage msg(param->getHostID(), self_addr_, param->getParamId(), short(param->getValue().toInt()), ProtosMessage::MsgTypes::PSET);
+    socket_adapter_->SendMsg(msg);
 }
 
 void ParamService::timerFinished(int timID) {
-    for(auto it=timerMap.begin(); it!=timerMap.end(); it++){
+    for(auto it=timer_map_.begin(); it != timer_map_.end(); it++){
         if(it.value()->timerId() == timID){
             it.value()->stop();
-            if(paramsMap.contains(it.key())) {
-                paramsMap[it.key()]->timeoutUpdate();
-                emit changedParamState(UPDATE);
+            if(param_map_.contains(it.key())) {
+                param_map_[it.key()]->timeoutUpdate();
+                emit onChangedParamState(ParamItemType::kUpdate);
             }
             break;
         }
@@ -331,67 +332,67 @@ void ParamService::timerFinished(int timID) {
 }
 
 void ParamService::setSelfAddr(uchar incomeSelfAddr) {
-    selfAddr = incomeSelfAddr;
+    self_addr_ = incomeSelfAddr;
 }
 
 uchar ParamService::getSelfAddr() const {
-    return selfAddr;
+    return self_addr_;
 }
 
 void ParamService::setWriteToFile(bool incomeWriteToFile) {
-    ParamService::writeToFile = incomeWriteToFile;
+    ParamService::write_to_file_ = incomeWriteToFile;
 }
 
 bool ParamService::isWriteToFile() const {
-    return writeToFile;
+    return write_to_file_;
 }
 
 void ParamService::closeAll() {
-    logFile->close();
+    log_file_->close();
 }
 
 QSet<uchar> ParamService::getAllHostsInSet() {
    auto retVal = QSet<uchar>();
-   for(const auto& param : paramsMap)
+   for(const auto& param : param_map_)
        retVal.insert(param->getHostID());
    return retVal;
 }
 
 void ParamService::configParam(const QString &mapKey){
-    if(paramsMap.contains(mapKey)){
-        auto param = paramsMap[mapKey];
+    if(param_map_.contains(mapKey)){
+        auto param = param_map_[mapKey];
     }
 }
 
 void ParamService::setReqOnSet(bool _reqOnSet) {
-    reqOnSet = _reqOnSet;
+    request_on_set_ = _reqOnSet;
 }
 
 bool ParamService::isReqOnSet() const {
-    return reqOnSet;
+    return request_on_set_;
 }
 
 void ParamService::removeAllParams() {
-    for(const auto& key: paramsMap.keys())
+    for(const auto& key: param_map_.keys())
         removeFromAllMaps(key);
-    paramsMap.clear();
-    timerMap.clear();
+    param_map_.clear();
+    timer_map_.clear();
     emit needToResetModels();
 }
 
 QStringList ParamService::getAllParamsStrList() {
     auto retVal = QStringList();
-    for(const auto& param : paramsMap)
+    for(const auto& param : param_map_)
         retVal.append(param->getTableName());
     return retVal;
 }
 
 QSharedPointer<ParamItem> ParamService::getParam(const QString& tableName){
-    return paramsMap.value(tableNameToMapKey(tableName));
+    return param_map_.value(tableNameToMapKey(tableName));
 }
 
 bool ParamService::containsParam(const QString& mapKey) {
-    return paramsMap.contains(mapKey);
+    return param_map_.contains(mapKey);
 }
 
 template<typename T>
@@ -405,7 +406,7 @@ void ParamService::makeParamServiceMsg(ParamItem* paramItem, ProtosMessage::Para
             QVariant()
     );
     if(set) message.SetParamValue(value, true);
-    socketAdapter->SendMsg(message);
+    socket_adapter_->SendMsg(message);
 }
 
 template<typename T>
@@ -417,5 +418,7 @@ void ParamService::sendServiceMsgReq(ParamItem *paramItem, ProtosMessage::ParamF
     makeParamServiceMsg(paramItem, field);
 }
 
-template void ParamService::sendServiceMsgSet<float>(ParamItem *paramItem, const float& value, ProtosMessage::ParamFields field);
-template void ParamService::sendServiceMsgSet<short>(ParamItem *paramItem, const short& value, ProtosMessage::ParamFields field);
+template void ParamService::sendServiceMsgSet<float>
+        (ParamItem *paramItem, const float& value, ProtosMessage::ParamFields field);
+template void ParamService::sendServiceMsgSet<short>
+        (ParamItem *paramItem, const short& value, ProtosMessage::ParamFields field);

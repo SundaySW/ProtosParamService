@@ -25,7 +25,7 @@ public:
     ParamService(ParamService*) = delete;
 
     void setSocketAdapter(QSharedPointer<SocketAdapter> SA);
-    bool addParam(ParamItem &&paramItem, bool addToDB=true);
+    bool addParam(ParamItem &&param_item, bool add_to_DB=true);
     bool addParam(uchar, uchar, ParamItemType);
     bool removeParam(const QString&);
     bool updateParam(const ProtosMessage &message, const QString &mapKey);
@@ -53,11 +53,11 @@ public:
     void removeAllParams();
     QSharedPointer<ParamItem> getParam(const QString&);
     bool containsParam(const QString&);
-    template<typename T>
-    void sendServiceMsgSet(ParamItem *paramItem, const T &value, ProtosMessage::ParamFields field);
     void sendServiceMsgReq(ParamItem *paramItem, ProtosMessage::ParamFields field);
+    template<typename T>
+        void sendServiceMsgSet(ParamItem *paramItem, const T &value, ProtosMessage::ParamFields field);
 signals:
-    void changedParamState(ParamItemType);
+    void onChangedParamState(ParamItemType);
     void changedParamValue(const QSharedPointer<ParamItem> param);
     void addedParamFromLine(ParamItemType);
     void addedParamFromLine(const QSharedPointer<ParamItem> param);
@@ -65,17 +65,16 @@ signals:
 private slots:
     void writeTimerUpdate();
 private:
-    uchar selfAddr;
-    QMap<QString, QSharedPointer<ParamItem>> paramsMap;
-    QMap<QString, QTimer*> timerMap;
-
-    QTimer* writeTimer;
-    int mSecWriteTimer = 1000;
-    bool writeToFile;
-    bool reqOnSet;
-    QFile* logFile;
-    QTextStream textStream;
-    QSharedPointer<SocketAdapter> socketAdapter;
+    uchar self_addr_;
+    QMap<QString, QSharedPointer<ParamItem>> param_map_;
+    QMap<QString, QTimer*> timer_map_;
+    QTimer* write_timer_;
+    const int kMSec_write_time_ = 1000;
+    bool write_to_file_;
+    bool request_on_set_;
+    QFile* log_file_;
+    QTextStream text_stream_;
+    QSharedPointer<SocketAdapter> socket_adapter_;
     void txMsgHandler(const ProtosMessage &message);
     void rxMsgHandler(const ProtosMessage &message);
     void timerFinished(int timID);
@@ -84,15 +83,14 @@ private:
     void setParamEvent(const QString &mapKey);
     void sendProtosMsgSetParam(const QString &mapKey);
     void processSetParamReq(const QString &mapKey);
-    void manageTimersWhileUpdate(const QString &mapKey, uchar msgType, int updateRate, int paramType);
+    void ManageTimersWhileUpdate(const QString &map_key, uchar msg_type, int update_rate, ParamItemType param_type);
     void processPANSMsg(const ProtosMessage &message);
     void removeFromAllMaps(const QString &mapKey);
     void updateParamViewUpdateRate(const QString &mapKey, const QVariant &value);
-    void processPSETMsg(const ProtosMessage &message);
+    void processSETMsg(const ProtosMessage &message);
     void updateParamUpdateRates(const QString &mapKey, const QVariant &value, uchar paramField);
     void updateParamCalibData(const QString &mapKey, const QVariant &value, uchar paramField);
-
     template<typename T = short>
-    void makeParamServiceMsg(ParamItem* paramItem, ProtosMessage::ParamFields field, T value = 0, bool set = false);
+        void makeParamServiceMsg(ParamItem* paramItem, ProtosMessage::ParamFields field, T value = 0, bool set = false);
 };
 #endif //POTOSSERVER_PARAMSERVICE_PARAMSERVICE_H

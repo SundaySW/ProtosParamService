@@ -164,7 +164,7 @@ void SocketAdapter::on_Socket_error(QAbstractSocket::SocketError socketError)
 		errSt = tr("The connection was refused by the peer (or timed out).");
 		break;
 	case QAbstractSocket::RemoteHostClosedError:
-		errSt = tr("The remote host closed the connection. Note that the client socket (i.e., this socket) will be closed after the remote close notification has been sent.");
+		errSt = tr("The remote host closed the connection. note_ that the client socket (i.e., this socket) will be closed after the remote close notification has been sent.");
 		break;
 	case QAbstractSocket::HostNotFoundError:	
 		errSt = tr("The host address was not found.");
@@ -218,7 +218,7 @@ void SocketAdapter::on_Socket_error(QAbstractSocket::SocketError socketError)
 		errSt = tr("The connection negotiation with the proxy server failed, because the response from the proxy server could not be understood.");
 		break;
 	case QAbstractSocket::OperationError:	
-		errSt = tr("An operation was attempted while the socket was in a state that did not permit it.");
+		errSt = tr("An operation was attempted while the socket was in a state_ that did not permit it.");
 		break;
 	case QAbstractSocket::SslInternalError:	
 		errSt = tr("The SSL library being used reported an internal error.This is probably the result of a bad installation or misconfiguration of the library.");
