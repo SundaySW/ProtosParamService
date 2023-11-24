@@ -246,9 +246,9 @@ void ParamService::updateParamViewUpdateRate(const QString& mapKey, const QVaria
     bool ok;
     auto newUpdateRateValue = (short)value.toInt(&ok);
     if(ok){
-        if(newUpdateRateValue > 2900) newUpdateRateValue *= 1.5;
-        else if(newUpdateRateValue >= 1200) newUpdateRateValue *= 2.5;
-        else newUpdateRateValue *= 4;
+        if(newUpdateRateValue > 2900) newUpdateRateValue = short(newUpdateRateValue * 1.5);
+        else if(newUpdateRateValue >= 1200) newUpdateRateValue = short(newUpdateRateValue * 2.5);
+        else newUpdateRateValue *= 5;
         if(param_map_.contains(mapKey))
             param_map_[mapKey]->setViewUpdateRate(newUpdateRateValue);
         if(timer_map_.contains(mapKey))
@@ -260,14 +260,16 @@ void ParamService::updateParamUpdateRates(const QString& mapKey, const QVariant&
     bool ok;
     auto newValue = (short)value.toInt(&ok);
     if(ok)
-        param_map_[mapKey]->setRateValue(paramField, newValue);
+        if(param_map_.contains(mapKey))
+            param_map_[mapKey]->setRateValue(paramField, newValue);
 }
 
 void ParamService::updateParamCalibData(const QString& mapKey, const QVariant& value, uchar paramField){
     bool ok;
     auto newValue = value.toDouble(&ok);
     if(ok)
-        param_map_[mapKey]->setCalibValue(paramField, newValue);
+        if(param_map_.contains(mapKey))
+            param_map_[mapKey]->setCalibValue(paramField, newValue);
 }
 
 void ParamService::txMsgHandler(const ProtosMessage &message) {
@@ -389,6 +391,10 @@ QStringList ParamService::getAllParamsStrList() {
 
 QSharedPointer<ParamItem> ParamService::getParam(const QString& tableName){
     return param_map_.value(tableNameToMapKey(tableName));
+}
+
+QVariant ParamService::getParamValue(const QString& tableName) {
+    return param_map_.value(tableNameToMapKey(tableName))->getValue();
 }
 
 bool ParamService::containsParam(const QString& mapKey) {

@@ -443,7 +443,7 @@ ProtosMessage& ProtosMessage::SetParamField(ProtosMessage::ParamFields field, uc
 			if (fieldValue != QVariant())
 				FloatField = fieldValue.toFloat();
 			break;
-			// all other param fields are read only
+			// all other protos_param_name fields are read only
 		}
 		break;
 	

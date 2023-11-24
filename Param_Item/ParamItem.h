@@ -38,8 +38,8 @@ public:
 
     [[nodiscard]] uchar getParamId() const;
     [[nodiscard]] uchar getHostID() const;
-    [[nodiscard]] const QVariant &getValue() const;
-    [[nodiscard]] const QString &getNote() const;
+    [[nodiscard]] const QVariant& getValue() const;
+    [[nodiscard]] const QString& getNote() const;
     [[nodiscard]] ParamItemStates getState() const;
     [[nodiscard]] ParamItemType getParamType() const;
     [[nodiscard]] bool isWriteToDb() const;

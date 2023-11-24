@@ -52,6 +52,7 @@ public:
     QStringList getAllParamsStrList();
     void removeAllParams();
     QSharedPointer<ParamItem> getParam(const QString&);
+    QVariant getParamValue (const QString&);
     bool containsParam(const QString&);
     void sendServiceMsgReq(ParamItem *paramItem, ProtosMessage::ParamFields field);
     template<typename T>
